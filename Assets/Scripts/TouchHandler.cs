@@ -35,6 +35,7 @@ public class TouchHandler : MonoBehaviour
     private Tuple<int, int> targetPos;
 
     public Tuple<bool, int, int> ifHold;
+    public Tuple<bool, int, int> ifZoom;
 
     # endregion
 
@@ -61,7 +62,8 @@ public class TouchHandler : MonoBehaviour
         selectInstances = new GameObject[RFIBParameter.maxTouch];
         targetPos = Tuple.Create(-1, -1);
 
-        ifHold = Tuple.Create(false, -1, -1);
+        ResetIfHold();
+        ResetIfZoom();
     }
 
     // Update is called once per frame
@@ -170,8 +172,22 @@ public class TouchHandler : MonoBehaviour
 
     private void Click(int x, int y)
     {
-        if (ifHold.Item1)
+        if (ifZoom.Item1)
         {
+            cardHandler.cardInstance[ifZoom.Item2 / 3, ifZoom.Item3 / 3].GetComponent<FileController>().ResetZoomIn();
+            ResetIfZoom();
+        }
+        else if (ifHold.Item1)
+        {
+            if (!cardHandler.IfFile(x / 3, y / 3))
+            {
+                cardHandler.cardInstance[ifHold.Item2, ifHold.Item3].GetComponent<FileController>().HideAllPhoto();
+                ResetIfHold();
+            }
+            else
+            {
+                SelectPhotoInFile(x, y);
+            }
         }
         else if (!cardHandler.IfFile(x / 3, y / 3) || selectCount > 0)
         {
@@ -189,15 +205,25 @@ public class TouchHandler : MonoBehaviour
     {
         Debug.Log(string.Format("DoubleClick ({0}, {1})", x / 3, y / 3));
 
-        SetTarget(x / 3, y / 3);
-
-        if (cardHandler.IfFile(x / 3, y / 3) && selectCount > 0)
+        if (ifHold.Item1)
         {
-            StartCoroutine(gameController.CopyPhoto(selectCount, selectPos, targetPos));
+            if (cardHandler.IfFile(x / 3, y / 3))
+            {
+                ZoomInPhoto(x, y);
+            }
         }
         else
         {
-            StartCoroutine(ResetSelect(0.5f));
+            SetTarget(x / 3, y / 3);
+
+            if (cardHandler.IfFile(x / 3, y / 3) && selectCount > 0)
+            {
+                StartCoroutine(gameController.CopyPhoto(selectCount, selectPos, targetPos));
+            }
+            else
+            {
+                StartCoroutine(ResetSelect(0.5f));
+            }
         }
 
         touchAction = "DoubleClickDone";
@@ -209,7 +235,7 @@ public class TouchHandler : MonoBehaviour
 
         if (cardHandler.IfFile(x / 3, y / 3))
         {
-            cardHandler.cardInstance[x / 3, y / 3].GetComponent<FileController>().ShowAllPhoto();
+            cardHandler.cardInstance[x / 3, y / 3].GetComponent<FileController>().HideOtherPhoto();
             ifHold = Tuple.Create(true, x / 3, y / 3);
         }
 
@@ -223,8 +249,8 @@ public class TouchHandler : MonoBehaviour
 
         if (cardHandler.IfFile(x / 3, y / 3))
         {
+            Debug.Log(ifHold);
             StartCoroutine(cardHandler.cardInstance[x / 3, y / 3].GetComponent<FileController>().SwipePage(ifHold.Item1, direction));
-            ifHold = Tuple.Create(false, -1, -1);
         }
 
         touchAction = "SwipeDone";
@@ -232,12 +258,6 @@ public class TouchHandler : MonoBehaviour
 
     private void Idle()
     {
-        if (ifHold.Item1)
-        {
-            cardHandler.cardInstance[ifHold.Item2, ifHold.Item3].GetComponent<FileController>().HideOtherPhoto();
-            ifHold = Tuple.Create(false, -1, -1);
-        }
-
         touchAction = "IdleDone";
     }
 
@@ -257,8 +277,18 @@ public class TouchHandler : MonoBehaviour
 
     private void SelectPhotoInFile(int x, int y)
     {
+        if (ifHold.Item1)
+        {
+            Debug.Log(string.Format("SelectPhoto ({0}, {1}) [{2}, {3}]", x / 3, y / 3, x % 3, y % 3));
+            cardHandler.cardInstance[x / 3, y / 3].GetComponent<FileController>().SelectPhoto(x % 3, y % 3);
+        }
+    }
+
+    private void ZoomInPhoto(int x, int y)
+    {
         Debug.Log(string.Format("SelectPhoto ({0}, {1}) [{2}, {3}]", x / 3, y / 3, x % 3, y % 3));
-        cardHandler.cardInstance[x / 3, y / 3].GetComponent<FileController>().SelectPhoto(x % 3, y % 3);
+        StartCoroutine(cardHandler.cardInstance[x / 3, y / 3].GetComponent<FileController>().ZoomInPhoto(x % 3, y % 3));
+        ifZoom = Tuple.Create(true, x, y);
     }
 
     private void SetTarget(int x, int y)
@@ -279,6 +309,73 @@ public class TouchHandler : MonoBehaviour
 
     private void IdentifyAction()
     {
+        //// Click
+        //if (clickCount == 1 && touchAction != "ClickDone")
+        //{
+        //    touchAction = "ClickDown";
+        //}
+        //if (clickCount == 1 && touchAction == "ClickDown" && touchTime < 30)
+        //{
+        //    touchAction = "Click";
+        //}
+        //// DoubleClick
+        //if (clickCount == 2 && touchAction != "DoubleClickDone")
+        //{
+        //    touchAction = "DoubleClick";
+        //}
+        //// Hold
+        //if (touchTime >= 30 && touchAction != "HoldDone" && touchAction != "SwipeDone")
+        //{
+        //    touchAction = "Hold";
+        //    clickCount = 0;
+        //}
+        //// Swipe
+        //if (touchHistoryCount >= 3 && touchAction != "SwipeDone")
+        //{
+        //    if (touchHistory[2].Item1 > touchHistory[1].Item1 &&
+        //        touchHistory[1].Item1 > touchHistory[0].Item1 &&
+        //        touchHistory[2].Item2 == touchHistory[1].Item2 &&
+        //        touchHistory[1].Item2 == touchHistory[0].Item2)
+        //    {
+        //        touchAction = "Swipe";
+        //        swipeDirection = "Left";
+        //        clickCount = 0;
+        //    }
+        //    else if (touchHistory[2].Item1 == touchHistory[1].Item1 &&
+        //        touchHistory[1].Item1 == touchHistory[0].Item1 &&
+        //        touchHistory[2].Item2 > touchHistory[1].Item2 &&
+        //        touchHistory[1].Item2 > touchHistory[0].Item2)
+        //    {
+        //        touchAction = "Swipe";
+        //        swipeDirection = "Up";
+        //        clickCount = 0;
+        //    }
+        //    else if (touchHistory[2].Item1 < touchHistory[1].Item1 &&
+        //        touchHistory[1].Item1 < touchHistory[0].Item1 &&
+        //        touchHistory[2].Item2 == touchHistory[1].Item2 &&
+        //        touchHistory[1].Item2 == touchHistory[0].Item2)
+        //    {
+        //        touchAction = "Swipe";
+        //        swipeDirection = "Right";
+        //        clickCount = 0;
+        //    }
+        //    else if (touchHistory[2].Item1 == touchHistory[1].Item1 &&
+        //        touchHistory[1].Item1 == touchHistory[0].Item1 &&
+        //        touchHistory[2].Item2 < touchHistory[1].Item2 &&
+        //        touchHistory[1].Item2 < touchHistory[0].Item2)
+        //    {
+        //        touchAction = "Swipe";
+        //        swipeDirection = "Down";
+        //        clickCount = 0;
+        //    }
+        //}
+        //// Idle
+        //if (notTouchTime >= 40 && touchAction != "IdleDone")
+        //{
+        //    touchAction = "Idle";
+        //    ResetTouch();
+        //}
+
         // Click
         if (clickCount == 1 && touchAction != "ClickDone")
         {
@@ -359,33 +456,41 @@ public class TouchHandler : MonoBehaviour
         selectCount = 0;
     }
 
+    public void ResetIfHold()
+    {
+        ifHold = Tuple.Create(false, -1, -1);
+    }
 
+    public void ResetIfZoom()
+    {
+        ifZoom = Tuple.Create(false, -1, -1);
+    }
 
     private void KeyPressed()
     {
         if (Input.GetKey("q"))
         {
-            rFIBManager.touchBlock[21, 8] = true;
+            rFIBManager.touchBlock[15, 8] = true;
         }
         else
         {
-            rFIBManager.touchBlock[21, 8] = false;
+            rFIBManager.touchBlock[15, 8] = false;
         }
         if (Input.GetKey("w"))
         {
-            rFIBManager.touchBlock[22, 8] = true;
+            rFIBManager.touchBlock[16, 8] = true;
         }
         else
         {
-            rFIBManager.touchBlock[22, 8] = false;
+            rFIBManager.touchBlock[16, 8] = false;
         }
         if (Input.GetKey("e"))
         {
-            rFIBManager.touchBlock[23, 8] = true;
+            rFIBManager.touchBlock[17, 8] = true;
         }
         else
         {
-            rFIBManager.touchBlock[23, 8] = false;
+            rFIBManager.touchBlock[17, 8] = false;
         }
         if (Input.GetKey("a"))
         {

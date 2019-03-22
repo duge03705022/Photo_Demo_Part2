@@ -151,7 +151,7 @@ public class RFIBManager : MonoBehaviour
         }
         if (tmpFlag1)
         {
-            RFIB._Testing_AddTestingTemporarilyTag("8940 0000 9999 0702 0001", "8940 0000 7101 0101 0001");
+            RFIB._Testing_AddTestingTemporarilyTag("8940 0000 9999 0502 0001", "8940 0000 7101 0101 0001");
         }
 
         if (Input.GetKeyUp("3"))
@@ -164,7 +164,7 @@ public class RFIBManager : MonoBehaviour
         }
         if (tmpFlag2)
         {
-            RFIB._Testing_AddTestingTemporarilyTag("8940 0000 9999 0503 0001", "8940 0000 7103 0101 0001");
+            RFIB._Testing_AddTestingTemporarilyTag("8940 0000 7101 0103 0001", "8940 0000 7601 0101 0001");
         }
 
         #region Information
@@ -175,7 +175,7 @@ public class RFIBManager : MonoBehaviour
         if (Input.GetKeyUp(";"))
         {
             RFIB.printStackedOrders();
-            Debug.Log(GetBlockInfoXYZ(3, 1, 0, "BlockIDType"));
+            //Debug.Log(GetBlockInfoXYZ(5, 2, 1, "BlockIDType"));
         }
         if (Input.GetKeyUp("."))
         {

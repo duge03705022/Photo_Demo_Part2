@@ -1,16 +1,18 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 public class CardHandler : MonoBehaviour
 {
     public RFIBManager rFIBManager;
+    public TouchHandler touchHandler;
 
     #region Card Parameter
     public GameObject[] file;
 
     public GameObject[,] cardInstance;
-    private string[,] lastBlockId;
+    private string[,,] lastBlockId;
 
     # endregion
 
@@ -18,14 +20,16 @@ public class CardHandler : MonoBehaviour
     void Start()
     {
         cardInstance = new GameObject[RFIBParameter.stageCol, RFIBParameter.stageRow];
-        lastBlockId = new string[RFIBParameter.stageCol, RFIBParameter.stageRow];
+        lastBlockId = new string[RFIBParameter.stageCol, RFIBParameter.stageRow, RFIBParameter.maxHight];
 
         for (int i = 0; i < RFIBParameter.stageCol; i++)
         {
             for (int j = 0; j < RFIBParameter.stageRow; j++)
             {
-                lastBlockId[i, j] = "0000";
-                Debug.Log("AAA");
+                for (int k = 0; k < RFIBParameter.maxHight; k++)
+                {
+                    lastBlockId[i, j, k] = "0000";
+                }
             }
         }
     }
@@ -42,7 +46,7 @@ public class CardHandler : MonoBehaviour
         {
             for (int j = 0; j < RFIBParameter.stageRow; j++)
             {
-                if (lastBlockId[i, j] != rFIBManager.blockId[i, j, 0])
+                if (lastBlockId[i, j, 0] != rFIBManager.blockId[i, j, 0])
                 {
                     if (rFIBManager.blockId[i, j, 0] != "0000")
                     {
@@ -53,7 +57,21 @@ public class CardHandler : MonoBehaviour
                         RemoveCard(i, j);
                     }
 
-                    lastBlockId[i, j] = rFIBManager.blockId[i, j, 0];
+                    lastBlockId[i, j, 0] = rFIBManager.blockId[i, j, 0];
+                }
+                if (rFIBManager.blockId[i, j, 0] != "0000")
+                {
+                    for (int k = 1; k < RFIBParameter.maxHight; k++)
+                    {
+                        if (rFIBManager.blockId[i, j, k] != "0000")
+                        {
+                            AddEffect(i, j, k);
+                        }
+                        else
+                        {
+                            HideEffect(i, j, k);
+                        }
+                    }
                 }
             }
         }
@@ -67,12 +85,40 @@ public class CardHandler : MonoBehaviour
             x * GameParameter.stageGap,
             y * GameParameter.stageGap,
             0);
+        cardInstance[x, y].GetComponent<FileController>().ResetZoomIn();
+        cardInstance[x, y].GetComponent<FileController>().HideAllPhoto();
+        cardInstance[x, y].GetComponent<FileController>().ResetSelectPhoto();
+        touchHandler.ResetIfHold();
+        touchHandler.ResetIfZoom();
     }
 
     private void RemoveCard(int x, int y)
     {
         cardInstance[x, y].SetActive(false);
         cardInstance[x, y] = null;
+    }
+
+    private void AddEffect(int x, int y, int z)
+    {
+        switch (RFIBParameter.SearchCard(rFIBManager.blockId[x, y, z]))
+        {
+            case 10:    // red mask
+                cardInstance[x, y].GetComponent<FileController>().SetTopMask("r");
+                break;
+            case 11:    // green mask
+                cardInstance[x, y].GetComponent<FileController>().SetTopMask("g");
+                break;
+            case 12:    // blue mask
+                cardInstance[x, y].GetComponent<FileController>().SetTopMask("b");
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void HideEffect(int x, int y, int z)
+    {
+        cardInstance[x, y].GetComponent<FileController>().HideTopMask();
     }
 
     public bool IfFile(int x, int y)

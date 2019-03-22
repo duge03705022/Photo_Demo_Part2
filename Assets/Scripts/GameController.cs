@@ -30,6 +30,7 @@ public class GameController : MonoBehaviour
                     i * GameParameter.stageGap,
                     j * GameParameter.stageGap,
                     0);
+                photoInstances[i, j].GetComponent<SpriteRenderer>().sortingOrder = 0;
             }
         }
 

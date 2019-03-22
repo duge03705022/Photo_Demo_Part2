@@ -5,17 +5,19 @@ using UnityEngine;
 public class FileController : MonoBehaviour
 {
     # region File Parameters 
+    public string fileName;
     public GameObject photoParent;
     public GameObject[] photosInFile;
     private int photoCount;
     private int showPage;
-    public GameObject photoMask;
-    private GameObject photoMaskInstance;
-
-    # endregion
+    public GameObject topMask;
+    //public GameObject photoMask;
+    //private GameObject photoMaskInstance;
 
     //
-    public GameObject firstPhoto;
+    public GameObject[] photos;
+
+    # endregion
 
     // Start is called before the first frame update
     void Start()
@@ -24,7 +26,12 @@ public class FileController : MonoBehaviour
         photoCount = 0;
         showPage = 0;
 
-        AddPhoto(firstPhoto);
+        for (int i = 0; i < photos.Length; i++)
+        {
+            AddPhoto(photos[i]);
+        }
+
+        HideAllPhoto();
     }
 
     // Update is called once per frame
@@ -57,6 +64,7 @@ public class FileController : MonoBehaviour
     {
         if (ifHold)
         {
+            ShowAllPhoto();
             int hidePage = showPage;
             switch (direction)
             {
@@ -92,17 +100,27 @@ public class FileController : MonoBehaviour
     public void ShowAllPhoto()
     {
         ResetSelectPhoto();
-        Destroy(photoMaskInstance);
-        photoMaskInstance = Instantiate(photoMask, transform.parent);
+        //Destroy(photoMaskInstance);
+        //photoMaskInstance = Instantiate(photoMask, transform.parent);
         for (int i = 0; i < photoCount; i++)
         {
             photosInFile[i].SetActive(true);
         }
     }
 
+    public void HideAllPhoto()
+    {
+        ResetSelectPhoto();
+        //Destroy(photoMaskInstance);
+        for (int i = 0; i < photoCount; i++)
+        {
+            photosInFile[i].SetActive(false);
+        }
+    }
+
     public void HideOtherPhoto()
     {
-        Destroy(photoMaskInstance);
+        //Destroy(photoMaskInstance);
         for (int i = 0; i < photoCount; i++)
         {
             if (i / 9 != showPage)
@@ -171,14 +189,75 @@ public class FileController : MonoBehaviour
 
     public void SelectPhoto(int x, int y)
     {
-        photosInFile[x * 3 - y + 2 + showPage * 9].GetComponent<SpriteRenderer>().color = new Color(1f, 0f, 0f);
+        if (x * 3 - y + 2 + showPage * 9 < photoCount)
+        {
+            photosInFile[x * 3 - y + 2 + showPage * 9].GetComponent<SpriteRenderer>().color = new Color(1f, 0f, 0f);
+        }
     }
 
-    private void ResetSelectPhoto()
+    public IEnumerator ZoomInPhoto(int x, int y)
+    {
+        ResetSelectPhoto();
+        HideAllPhoto();
+        photosInFile[x * 3 - y + 2 + showPage * 9].SetActive(true);
+        Vector3 oldPos = photosInFile[x * 3 - y + 2 + showPage * 9].transform.localPosition;
+        for (int i = 0; i < 5; i++)
+        {
+            photosInFile[x * 3 - y + 2 + showPage * 9].transform.localScale += new Vector3((0.82f - 0.24f) / 5, (0.8f - 0.24f) / 5, (0.8f - 0.24f) / 5);
+            photosInFile[x * 3 - y + 2 + showPage * 9].transform.localPosition += new Vector3((0f - oldPos.x) / 5, (0f - oldPos.y) / 5, (0f - oldPos.z) / 5);
+
+            yield return new WaitForSeconds(0.1f);
+        }
+    }
+
+    public void ResetZoomIn()
+    {
+        for (int i = 0; i < photoCount; i++)
+        {
+            photosInFile[i].transform.localPosition = new Vector3(
+            (float)((i / 3 - 1) * 1.3),
+            (float)((1 - i % 3) * 1.3),
+            0);
+            photosInFile[i].transform.localScale = new Vector3(
+                0.24f,
+                0.24f,
+                0.24f);
+            photosInFile[i].GetComponent<SpriteRenderer>().sortingOrder = 21;
+        }
+
+        HideOtherPhoto();
+    }
+
+    public void ResetSelectPhoto()
     {
         for (int i = 0; i < photoCount; i++)
         {
             photosInFile[i].GetComponent<SpriteRenderer>().color = new Color(1f, 1f, 1f);
         }
+    }
+
+    public void SetTopMask(string color)
+    {
+        topMask.SetActive(true);
+        switch (color)
+        {
+            case "r":
+                topMask.GetComponent<SpriteRenderer>().color = new Color(1f, 0f, 0f, 0.5f);
+                break;
+            case "g":
+                topMask.GetComponent<SpriteRenderer>().color = new Color(0f, 1f, 0f, 0.5f);
+                break;
+            case "b":
+                topMask.GetComponent<SpriteRenderer>().color = new Color(0f, 0f, 1f, 0.5f);
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void HideTopMask()
+    {
+        topMask.GetComponent<SpriteRenderer>().color = new Color(1f, 1f, 1f, 0.5f);
+        topMask.SetActive(false);
     }
 }
