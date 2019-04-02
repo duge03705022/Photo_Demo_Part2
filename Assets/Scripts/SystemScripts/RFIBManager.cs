@@ -134,7 +134,22 @@ public class RFIBManager : MonoBehaviour
 
     private void TouchSensing()
     {
+        blockController.updateArduinoData();
 
+        if (blockController.touchedColBlock != -1 && blockController.touchedRowBlock != -1)
+        {
+            touchBlock[blockController.touchedColBlock, blockController.touchedRowBlock] = true;
+        }
+        else
+        {
+            for (int i = 0; i < RFIBParameter.touchCol; i++)
+            {
+                for (int j = 0; j < RFIBParameter.touchRow; j++)
+                {
+                    touchBlock[i, j] = false;
+                }
+            }
+        }
     }
 
     bool tmpFlag1 = false;

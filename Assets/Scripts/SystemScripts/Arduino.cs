@@ -9,16 +9,27 @@ using System.Linq;
 
 public class Arduino : MonoBehaviour { 
 	// Serial
-	public static HashSet<int> touchID = new HashSet<int>();
-    public static Stack<string> touchShowID = new Stack<string>();
+	public HashSet<int> touchID = new HashSet<int>();
+    public Stack<string> touchShowID = new Stack<string>();
     public string portName;
-	public int baudRate = 9600;
-	SerialPort arduinoSerial;
+	public int baudRate;
+	public SerialPort arduinoSerial;
 	public string[] a;
+    public bool isController;
+    [Tooltip("0 for normal, 1 for testing")]public int mode;
+    public int rC;
+    public int jumpType;
+    public int clipStart;
+    public int clipNum;
+    public int sampleTimes;
+    public int testSampleTimes;
+    public bool isBaseline;
 
-	public int sensor;
+    private int count;
 
-	void Start () {
+    private bool arduinoReady;
+
+    void Start () {
 		// Open Serial port
 		arduinoSerial = new SerialPort (portName, baudRate);
 		// Set buffersize so read from Serial would be normal
@@ -29,35 +40,47 @@ public class Arduino : MonoBehaviour {
 		arduinoSerial.Parity = Parity.None;
 		arduinoSerial.StopBits = StopBits.One;
 		arduinoSerial.DtrEnable = true;
-		arduinoSerial.RtsEnable = true;;
+		arduinoSerial.RtsEnable = true;
 		arduinoSerial.Open ();
-	}
+        count = 0;
+        arduinoReady = false;
+    }
 
 	void Update() {
-		ReadFromArduino ();
-	}
+        if (isController)
+        {
+            count++;
+            if (count == 10)
+            {
+                arduinoSerial.Write("6");
+            }
+        }
+        else
+        {
+            if (!arduinoReady)
+            {
+                string str = rC.ToString() + jumpType.ToString() + clipStart.ToString() + clipNum.ToString() + mode.ToString() + sampleTimes.ToString() + testSampleTimes.ToString();
+                if (isBaseline)
+                {
+                    str = str + "1";
+                }
+                else
+                {
+                    str = str + "0";
+                }
+                arduinoSerial.WriteLine(str);
+                arduinoReady = true;
+            }
+            else
+            {
+                ReadFromArduino();
+            }
+        }
+    }
 
 	public void ReadFromArduino () {
 		string str = null;
-
-		//int num;
-        /*
-        try {
-			str = arduinoSerial.ReadLine();
-			if(str.Length>=3){
-				a = str.Split(',');
- 				print(str);
-				num = int.Parse(a[1]);
-				if(a[0] == "T"){	
-					touchID.Add(num);
-				}else if(a[0] == "F"){
-					touchID.Remove(num);
-				}
-			}
-		}
-		catch (TimeoutException e) {
-		}
-        */
+        
         try
         {
             str = arduinoSerial.ReadLine();
@@ -66,7 +89,7 @@ public class Arduino : MonoBehaviour {
                 touchShowID.Push(str);
             }
         }
-        catch (TimeoutException)
+        catch (TimeoutException e)
         {
         }
     }
